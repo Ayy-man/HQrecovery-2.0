@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Phone, Mail, Lock, CheckCircle, AlertCircle } from 'lucide-react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { HealthCommitmentModal } from './HealthCommitmentModal';
 
 interface SignUpFormProps {
   onSuccess: () => void;
@@ -21,12 +22,14 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
     referralSource: '',
     visitedBefore: '',
     specialNotes: '',
+    healthCommitmentAccepted: false,
     acknowledgement: false,
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showHealthModal, setShowHealthModal] = useState(false);
 
   const serviceOptions = [
     'Recovery Sessions',
@@ -93,6 +96,10 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
       setError('Passwords do not match');
       return false;
     }
+    if (!formData.healthCommitmentAccepted) {
+      setError('You must read and accept the Health Commitment Statement');
+      return false;
+    }
     if (!formData.acknowledgement) {
       setError('You must acknowledge the terms to continue');
       return false;
@@ -128,6 +135,9 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
         referralSource: formData.referralSource,
         visitedBefore: formData.visitedBefore,
         specialNotes: formData.specialNotes,
+        healthCommitmentAccepted: formData.healthCommitmentAccepted,
+        healthCommitmentAcceptedAt: new Date().toISOString(),
+        acknowledgementAccepted: formData.acknowledgement,
         uid: userCredential.user.uid,
         timestamp: new Date().toISOString()
       };
@@ -386,6 +396,40 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
             />
           </div>
 
+          {/* Health Commitment Statement */}
+          <div className={`bg-[#2a2520] border-2 rounded-lg p-5 transition-all duration-200 ${
+            formData.healthCommitmentAccepted
+              ? 'border-[#d8ba5b] bg-[#d8ba5b]/5'
+              : 'border-[#3a342f]'
+          }`}>
+            <label className="flex items-start space-x-3 cursor-pointer group">
+              <div className="relative flex items-center justify-center mt-0.5">
+                <input
+                  type="checkbox"
+                  name="healthCommitmentAccepted"
+                  checked={formData.healthCommitmentAccepted}
+                  onChange={handleInputChange}
+                  className="w-6 h-6 rounded border-2 border-[#3a342f] bg-[#231f1e] cursor-pointer
+                             checked:bg-[#d8ba5b] checked:border-[#d8ba5b]
+                             focus:ring-2 focus:ring-[#d8ba5b] focus:ring-offset-2 focus:ring-offset-[#2a2520]
+                             transition-all duration-200 flex-shrink-0"
+                  style={{ accentColor: '#d8ba5b' }}
+                  required
+                />
+              </div>
+              <span className="text-gray-300 text-sm leading-relaxed">
+                <span className="text-red-400 font-bold">*</span> I have read and agree to the{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowHealthModal(true)}
+                  className="text-[#d8ba5b] hover:text-[#c9a852] underline font-medium transition-colors"
+                >
+                  Health Commitment Statement
+                </button>
+              </span>
+            </label>
+          </div>
+
           {/* Acknowledgement */}
           <div className={`bg-[#2a2520] border-2 rounded-lg p-5 transition-all duration-200 ${
             formData.acknowledgement
@@ -469,6 +513,12 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
           </div>
         </div>
       </div>
+
+      {/* Health Commitment Modal */}
+      <HealthCommitmentModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+      />
     </div>
   );
 };
